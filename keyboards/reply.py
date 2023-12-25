@@ -20,6 +20,7 @@ price_keyboard = ReplyKeyboardMarkup(keyboard=[
     ]
 ], resize_keyboard=True)
 
+
 oplata_keyboard_1_month = InlineKeyboardMarkup(inline_keyboard=[
     [
         InlineKeyboardButton(
