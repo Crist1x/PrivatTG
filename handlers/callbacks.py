@@ -1,30 +1,64 @@
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.enums import ParseMode
-from aiogram import Bot
-from data.config import oplata_text
-from utils.statesform import Oplata1Form
+from aiogram import Bot, F
+from data.config import predup_text
+from utils.statesform import GetWalletForm
 
 import dotenv
 import os
 import requests
+import sqlite3
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 bot = Bot(os.getenv("TG_TOKEN"))
 
 
-# Колбек оплаты 1 месяца
-async def oplata1_form(message: Message, state: FSMContext):
+# Колбек предупрждения
+async def predup_form(message: Message, state: FSMContext):
     await bot.send_message(message.from_user.id,
-                           oplata_text,
+                           predup_text,
                            parse_mode=ParseMode.HTML)
-    await state.set_state(Oplata1Form.GET_WALLET)
+    await state.set_state(GetWalletForm.GET_WALLET)
 
 
-async def get_wallet(message: Message):
-    # TODO: Сдеать проверку существует ли кошелек или нет и добавить пользователя в бд, если есть
-    r = requests.get(f"https://api.trongrid.io/v1/accounts/{str(os.getenv('TYOMA_WALLET'))}/transactions/trc20",
-                     headers={"accept": "application/json"})
-    print(r.json())
-    await message.answer("Кошелек получен.")
+# Функция получения кошелька
+async def get_wallet(message: Message, state: FSMContext):
+    # проверка кошелька на валидность
+    wallet_check = requests.get(f"https://api.trongrid.io/v1/accounts/{message.text}/transactions/trc20",
+                     headers={"accept": "application/json"}).json()
+    print(wallet_check)
+    # если не успешно
+    if not wallet_check["success"]:
+        await message.answer("Такого кошелька не существует. Повторите попытку ввода: ")
+        await state.clear()
+        await state.set_state(GetWalletForm.GET_WALLET)
+
+    # если успешно
+    else:
+        await state.update_data(wallet=message.text)
+        connection = sqlite3.connect('db/database.db')
+        cursor = connection.cursor()
+
+        not_first_time = cursor.execute("SELECT username FROM users WHERE username=?", (message.from_user.username, )).fetchone()
+        wallet_num = await state.get_data()
+
+        if not_first_time:
+            cursor.execute(f"UPDATE users SET wallet = '{wallet_num.get('wallet')}' WHERE username = '{message.from_user.username}'")
+        else:
+            cursor.execute(f"""INSERT INTO users
+                                      (username, wallet, date_start, date_finish)
+                                      VALUES
+                                      ('{message.from_user.username}', '{wallet_num.get('wallet')}', '', '');""")
+        connection.commit()
+        cursor.close()
+        await message.answer("Кошелек получен✅")
+        await state.clear()
+
+        # Распрделение периодов
+        if F.data == "oplata1":
+            pass
+
+
+
 

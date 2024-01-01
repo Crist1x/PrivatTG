@@ -8,13 +8,13 @@ from aiogram import Bot, Dispatcher, Router, types, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
-from aiogram.utils.markdown import hbold, hitalic, hcode, hunderline
+from aiogram.utils.markdown import hbold, hitalic
 
 from keyboards.reply import greeting_keyboard, price_keyboard, oplata_keyboard_1_month, oplata_keyboard_2_month, \
     oplata_keyboard_3_month
 from data.config import price_list, dostup_text, pic
 from handlers import callbacks
-from utils.statesform import Oplata1Form
+from utils.statesform import GetWalletForm
 
 
 dotenv.load_dotenv(dotenv.find_dotenv())
@@ -62,7 +62,7 @@ async def two_months(message: Message, bot: Bot):
                          photo=pic,
                          caption=text,
                          parse_mode=ParseMode.HTML,
-                         reply_markup=oplata_keyboard_1_month
+                         reply_markup=oplata_keyboard_2_month
                          )
 
 
@@ -74,7 +74,7 @@ async def three_months(message: Message, bot: Bot):
                          photo=pic,
                          caption=text,
                          parse_mode=ParseMode.HTML,
-                         reply_markup=oplata_keyboard_1_month
+                         reply_markup=oplata_keyboard_3_month
                          )
 
 
@@ -87,8 +87,8 @@ async def get_start(message: Message, bot: Bot):
 
 
 # Обработка коллбека оплаты 1 месяца
-dp.callback_query.register(callbacks.oplata1_form, F.data == "oplata1")
-dp.message.register(callbacks.get_wallet, Oplata1Form.GET_WALLET)
+dp.callback_query.register(callbacks.predup_form, F.data.startswith("oplata"))
+dp.message.register(callbacks.get_wallet, GetWalletForm.GET_WALLET)
 
 
 # Запуск бота

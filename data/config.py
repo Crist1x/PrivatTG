@@ -14,10 +14,13 @@ dostup_text = Template(f"""ЦЕНА: {hbold('$price')}
 """)
 
 
-oplata_text = f"""{hbold('Оплата:')} {hcode('TH9n968wHMRjAqHMKguMsHHKJqYmQsXjQU')}
-{hbold('Сеть:')} TRC-20
-
-{hunderline('Чтобы вы без проблем были добавлены в канал, нам необходимо знать реквизиты кошелька, '
+predup_text = f"""{hunderline('Чтобы вы без проблем были добавлены в канал, нам необходимо знать реквизиты кошелька, '
             'с которого произойдет оплата.')}
 {hbold('Пришлите его следующим сообщением без лишних символов!')}
+"""
+
+oplata1_text = f"""{hbold('Оплата:')} {hcode('TH9n968wHMRjAqHMKguMsHHKJqYmQsXjQU')}
+{hbold('Сеть:')} TRC-20
+
+
 """

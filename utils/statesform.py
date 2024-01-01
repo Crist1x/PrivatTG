@@ -1,5 +1,5 @@
 from aiogram.fsm.state import StatesGroup, State
 
 
-class Oplata1Form(StatesGroup):
+class GetWalletForm(StatesGroup):
     GET_WALLET = State()
