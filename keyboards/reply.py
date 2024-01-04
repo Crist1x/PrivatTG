@@ -47,3 +47,12 @@ oplata_keyboard_3_month = InlineKeyboardMarkup(inline_keyboard=[
         )
     ]
 ], resize_keyboard=True)
+
+confirmation_kb = ReplyKeyboardMarkup(keyboard=[
+    [
+        KeyboardButton(text="Подвердить перевод ✅")
+    ],
+    [
+        KeyboardButton(text="Отмена ❌")
+    ]
+], resize_keyboard=True)

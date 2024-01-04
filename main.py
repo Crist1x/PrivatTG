@@ -3,6 +3,9 @@ import logging
 import sys
 import os
 import dotenv
+import sqlite3
+import requests
+from datetime import datetime, timedelta
 
 from aiogram import Bot, Dispatcher, Router, types, F
 from aiogram.enums import ParseMode
@@ -12,7 +15,7 @@ from aiogram.utils.markdown import hbold, hitalic
 
 from keyboards.reply import greeting_keyboard, price_keyboard, oplata_keyboard_1_month, oplata_keyboard_2_month, \
     oplata_keyboard_3_month
-from data.config import price_list, dostup_text, pic
+from data.config import price_list, dostup_text, pic, problem, success
 from handlers import callbacks
 from utils.statesform import GetWalletForm
 
@@ -80,10 +83,58 @@ async def three_months(message: Message, bot: Bot):
 
 # Кнопка назад в меню
 @dp.message(F.text == "Назад")
-async def get_start(message: Message, bot: Bot):
+async def back(message: Message, bot: Bot):
     await message.answer(hbold('Вы вернулись в меню↩️'),
                          parse_mode=ParseMode.HTML,
                          reply_markup=greeting_keyboard)
+
+
+# Кнопка отмены
+@dp.message(F.text == "Отмена ❌")
+async def cansel(message: Message, bot: Bot):
+    await message.answer(hbold('Выберите интересующий вас период:'),
+                         parse_mode=ParseMode.HTML,
+                         reply_markup=price_keyboard)
+
+
+# Кнопка подтверждения перевода
+@dp.message(F.text == "Подвердить перевод ✅")
+async def confirm(message: Message, bot: Bot):
+    # Подключение к бд
+    connection = sqlite3.connect('db/database.db')
+    cursor = connection.cursor()
+    user_wallet = cursor.execute(f"SELECT wallet FROM users WHERE username='{message.from_user.username}'").fetchone()[0]
+    # Получение информации о транзах с кошелька пользователя
+    r_link = f"https://api.trongrid.io/v1/accounts/{user_wallet}/transactions/trc20"
+    data = requests.get(r_link, params={'limit':3}, headers={"accept": "application/json"}).json()
+    # Проход по транзам и получение нужной
+    for tr in data.get('data', []):
+        symbol = tr.get('token_info', {}).get('symbol')
+        to = tr.get('to')
+        v = tr.get('value', '')
+
+        dec = -1 * int(tr.get('token_info', {}).get('decimals', '6'))
+        f = float(v[:dec] + '.' + v[dec:])
+
+        if symbol == "USDT":
+            if F.data == "oplata1":
+                if 35 < f < 36:
+                    link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
+                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
+                else:
+                    await message.answer(problem)
+            elif F.data == "oplata2":
+                if 69 < f < 71:
+                    link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
+                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
+                else:
+                    await message.answer(problem)
+            elif F.data == "oplata3":
+                if 99 < f < 101:
+                    link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
+                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
+                else:
+                    await message.answer(problem)
 
 
 # Обработка коллбека оплаты 1 месяца

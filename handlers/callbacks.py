@@ -2,8 +2,9 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.enums import ParseMode
 from aiogram import Bot, F
-from data.config import predup_text
+from data.config import predup_text, oplata_text, price_list
 from utils.statesform import GetWalletForm
+from keyboards.reply import confirmation_kb
 
 import dotenv
 import os
@@ -57,7 +58,21 @@ async def get_wallet(message: Message, state: FSMContext):
 
         # Распрделение периодов
         if F.data == "oplata1":
-            pass
+            text = oplata_text.substitute(price=price_list[0])
+            await message.answer(text=text,
+                                 parse_mode=ParseMode.HTML,
+                                 reply_markup=confirmation_kb)
+        elif F.data == "oplata2":
+            text = oplata_text.substitute(price=price_list[1])
+            await message.answer(text=text,
+                                 parse_mode=ParseMode.HTML,
+                                 reply_markup=confirmation_kb)
+        elif F.data == "oplata3":
+            text = oplata_text.substitute(price=price_list[2])
+            await message.answer(text=text,
+                                 parse_mode=ParseMode.HTML,
+                                 reply_markup=confirmation_kb)
+
 
 
 
