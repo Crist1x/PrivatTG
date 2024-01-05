@@ -24,7 +24,7 @@ price_keyboard = ReplyKeyboardMarkup(keyboard=[
 oplata_keyboard_1_month = InlineKeyboardMarkup(inline_keyboard=[
     [
         InlineKeyboardButton(
-            text="Оплатить",
+            text="Оплатить месяц",
             callback_data="oplata1"
         )
     ]
@@ -33,7 +33,7 @@ oplata_keyboard_1_month = InlineKeyboardMarkup(inline_keyboard=[
 oplata_keyboard_2_month = InlineKeyboardMarkup(inline_keyboard=[
     [
         InlineKeyboardButton(
-            text="Оплатить",
+            text="Оплатить 2 месяца",
             callback_data="oplata2"
         )
     ]
@@ -42,15 +42,33 @@ oplata_keyboard_2_month = InlineKeyboardMarkup(inline_keyboard=[
 oplata_keyboard_3_month = InlineKeyboardMarkup(inline_keyboard=[
     [
         InlineKeyboardButton(
-            text="Оплатить",
+            text="Оплатить 3 месяца",
             callback_data="oplata3"
         )
     ]
 ], resize_keyboard=True)
 
-confirmation_kb = ReplyKeyboardMarkup(keyboard=[
+confirmation_kb1 = ReplyKeyboardMarkup(keyboard=[
     [
-        KeyboardButton(text="Подвердить перевод ✅")
+        KeyboardButton(text="Подвердить перевод 💵")
+    ],
+    [
+        KeyboardButton(text="Отмена ❌")
+    ]
+], resize_keyboard=True)
+
+confirmation_kb2 = ReplyKeyboardMarkup(keyboard=[
+    [
+        KeyboardButton(text="Подвердить перевод 💰")
+    ],
+    [
+        KeyboardButton(text="Отмена ❌")
+    ]
+], resize_keyboard=True)
+
+confirmation_kb3 = ReplyKeyboardMarkup(keyboard=[
+    [
+        KeyboardButton(text="Подвердить перевод 👑")
     ],
     [
         KeyboardButton(text="Отмена ❌")

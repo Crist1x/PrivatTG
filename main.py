@@ -15,10 +15,9 @@ from aiogram.utils.markdown import hbold, hitalic
 
 from keyboards.reply import greeting_keyboard, price_keyboard, oplata_keyboard_1_month, oplata_keyboard_2_month, \
     oplata_keyboard_3_month
-from data.config import price_list, dostup_text, pic, problem, success
+from data.config import price_list, dostup_text, pic, problem, success, uncorrect_summ
 from handlers import callbacks
-from utils.statesform import GetWalletForm
-
+from utils.statesform import GetWalletForm1, GetWalletForm2, GetWalletForm3
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 
@@ -97,16 +96,35 @@ async def cansel(message: Message, bot: Bot):
                          reply_markup=price_keyboard)
 
 
-# Кнопка подтверждения перевода
-@dp.message(F.text == "Подвердить перевод ✅")
-async def confirm(message: Message, bot: Bot):
+# Кнопка подтверждения перевода 1 месяца
+@dp.message(F.text == "Подвердить перевод 💵")
+async def confirm(message: Message):
+    await tranzaction_info(message, 1)
+
+
+# Кнопка подтверждения перевода 2 месяца
+@dp.message(F.text == "Подвердить перевод 💰")
+async def confirm(message: Message):
+    await tranzaction_info(message, 2)
+
+
+# Кнопка подтверждения перевода 3 месяца
+@dp.message(F.text == "Подвердить перевод 👑")
+async def confirm(message: Message):
+    await tranzaction_info(message, 3)
+
+
+# Вспомогательная функция
+async def tranzaction_info(message: Message, month):
     # Подключение к бд
     connection = sqlite3.connect('db/database.db')
     cursor = connection.cursor()
-    user_wallet = cursor.execute(f"SELECT wallet FROM users WHERE username='{message.from_user.username}'").fetchone()[0]
+    user_wallet = cursor.execute(f"SELECT wallet FROM users WHERE username='{message.from_user.username}'").fetchone()[
+        0]
     # Получение информации о транзах с кошелька пользователя
     r_link = f"https://api.trongrid.io/v1/accounts/{user_wallet}/transactions/trc20"
-    data = requests.get(r_link, params={'limit':3}, headers={"accept": "application/json"}).json()
+    data = requests.get(r_link, params={'limit': 3}, headers={"accept": "application/json"}).json()
+
     # Проход по транзам и получение нужной
     for tr in data.get('data', []):
         symbol = tr.get('token_info', {}).get('symbol')
@@ -117,29 +135,43 @@ async def confirm(message: Message, bot: Bot):
         f = float(v[:dec] + '.' + v[dec:])
 
         if symbol == "USDT":
-            if F.data == "oplata1":
-                if 35 < f < 36:
+            if month == 1:
+                if 34 < f < 36:
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
                 else:
-                    await message.answer(problem)
-            elif F.data == "oplata2":
+                    text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
+                    await message.answer(text,
+                                         parse_mode=ParseMode.HTML)
+            elif month == 2:
                 if 69 < f < 71:
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
                 else:
-                    await message.answer(problem)
-            elif F.data == "oplata3":
+                    text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
+                    await message.answer(text,
+                                         parse_mode=ParseMode.HTML)
+            else:
                 if 99 < f < 101:
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
                 else:
-                    await message.answer(problem)
+                    text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
+                    await message.answer(text,
+                                         parse_mode=ParseMode.HTML)
+        else:
+            await message.answer(problem)
 
 
 # Обработка коллбека оплаты 1 месяца
-dp.callback_query.register(callbacks.predup_form, F.data.startswith("oplata"))
-dp.message.register(callbacks.get_wallet, GetWalletForm.GET_WALLET)
+dp.callback_query.register(callbacks.predup_form1, F.data == "oplata1")
+dp.message.register(callbacks.get_wallet1, GetWalletForm1.GET_WALLET)
+# Обработка коллбека оплаты 2 месяца
+dp.callback_query.register(callbacks.predup_form2, F.data == "oplata2")
+dp.message.register(callbacks.get_wallet2, GetWalletForm2.GET_WALLET)
+# Обработка коллбека оплаты 3 месяца
+dp.callback_query.register(callbacks.predup_form3, F.data == "oplata3")
+dp.message.register(callbacks.get_wallet3, GetWalletForm3.GET_WALLET)
 
 
 # Запуск бота
