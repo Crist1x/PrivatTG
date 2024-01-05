@@ -5,9 +5,11 @@ import os
 import dotenv
 import sqlite3
 import requests
-from datetime import datetime, timedelta
+import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import date, timedelta
 
-from aiogram import Bot, Dispatcher, Router, types, F
+from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
@@ -28,6 +30,9 @@ dp = Dispatcher()
 # Начальная фраза
 @dp.message(CommandStart())
 async def get_start(message: Message, bot: Bot):
+    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+    scheduler.add_job(checking, trigger='interval', hours=12)
+    scheduler.start()
     await message.answer(hbold("Привет,", message.from_user.username) + "!\n\n"
                          f"С помощью этого бота ты сможешь купить доступ в мою приватку.\n\n"
                          f"{hitalic('Для помощи напиши /help')}\n\n"
@@ -136,31 +141,51 @@ async def tranzaction_info(message: Message, month):
 
         if symbol == "USDT":
             if month == 1:
-                if 34 < f < 36:
+                if 0 < f < 36:
+                    cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
+                                   f"'{str(date.today() + timedelta(days=30))}' WHERE username = "
+                                   f"'{message.from_user.username}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
-                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
+                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
+                                         reply_markup=greeting_keyboard)
+
                 else:
                     text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
                     await message.answer(text,
                                          parse_mode=ParseMode.HTML)
             elif month == 2:
                 if 69 < f < 71:
+                    cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
+                                   f"'{str(date.today() + timedelta(days=60))}' WHERE username = "
+                                   f"'{message.from_user.username}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
-                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
+                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
+                                         reply_markup=greeting_keyboard)
+
                 else:
                     text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
                     await message.answer(text,
                                          parse_mode=ParseMode.HTML)
             else:
                 if 99 < f < 101:
+                    cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
+                                   f"'{str(date.today() + timedelta(days=90))}' WHERE username = "
+                                   f"'{message.from_user.username}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
-                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML)
+                    await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
+                                         reply_markup=greeting_keyboard)
                 else:
                     text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
                     await message.answer(text,
                                          parse_mode=ParseMode.HTML)
         else:
             await message.answer(problem)
+    connection.commit()
+    cursor.close()
+
+
+async def checking():
+    pass
 
 
 # Обработка коллбека оплаты 1 месяца
