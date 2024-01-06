@@ -30,9 +30,6 @@ dp = Dispatcher()
 # Начальная фраза
 @dp.message(CommandStart())
 async def get_start(message: Message, bot: Bot):
-    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-    scheduler.add_job(checking, trigger='interval', hours=12)
-    scheduler.start()
     await message.answer(hbold("Привет,", message.from_user.username) + "!\n\n"
                          f"С помощью этого бота ты сможешь купить доступ в мою приватку.\n\n"
                          f"{hitalic('Для помощи напиши /help')}\n\n"
@@ -139,9 +136,10 @@ async def tranzaction_info(message: Message, month):
         dec = -1 * int(tr.get('token_info', {}).get('decimals', '6'))
         f = float(v[:dec] + '.' + v[dec:])
 
+        # if symbol == "USDT" and to == os.getenv("TYOMA_WALLET"): ПОМЕНЯТЬ
         if symbol == "USDT":
             if month == 1:
-                if 0 < f < 36:
+                if 34 < f < 36:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=30))}' WHERE username = "
                                    f"'{message.from_user.username}'")
@@ -154,7 +152,7 @@ async def tranzaction_info(message: Message, month):
                     await message.answer(text,
                                          parse_mode=ParseMode.HTML)
             elif month == 2:
-                if 69 < f < 71:
+                if 0 < f < 71:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=60))}' WHERE username = "
                                    f"'{message.from_user.username}'")
@@ -185,7 +183,10 @@ async def tranzaction_info(message: Message, month):
 
 
 async def checking():
-    pass
+    connection = sqlite3.connect('db/database.db')
+    cursor = connection.cursor()
+    users_list = cursor.execute("SELECT username, date_finish FROM users").fetchall()
+    print(users_list)
 
 
 # Обработка коллбека оплаты 1 месяца
@@ -202,6 +203,9 @@ dp.message.register(callbacks.get_wallet3, GetWalletForm3.GET_WALLET)
 # Запуск бота
 async def start():
     try:
+        scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+        scheduler.add_job(checking, trigger='interval', seconds=12)
+        scheduler.start()
         await dp.start_polling(bot)
     finally:
         await bot.session.close()

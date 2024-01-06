@@ -100,13 +100,34 @@ async def wallet_append(message: Message, state: FSMContext, month):
     wallet_num = await state.get_data()
 
     if not_first_time:
-        cursor.execute(
-            f"UPDATE users SET wallet = '{wallet_num.get('wallet')}' WHERE username = '{message.from_user.username}'")
+        try:
+            cursor.execute(
+                f"UPDATE users SET wallet = '{wallet_num.get('wallet')}' WHERE username = '{message.from_user.username}'")
+            await messages_rasp(message, state, connection, cursor, month)
+        except sqlite3.IntegrityError:
+            connection.commit()
+            cursor.close()
+            await message.answer("Такой кошелек уже привязан к другому аккаунту. Попробуйте привязать другой кошелек "
+                                 "и произведите оплату с него.")
+            await state.clear()
+            await state.set_state(GetWalletForm3.GET_WALLET)
     else:
-        cursor.execute(f"""INSERT INTO users
-                                          (username, wallet, date_start, date_finish)
-                                          VALUES
-                                          ('{message.from_user.username}', '{wallet_num.get('wallet')}', '', '');""")
+        try:
+            cursor.execute(f"""INSERT INTO users
+                                              (username, wallet, date_start, date_finish)
+                                              VALUES
+                                              ('{message.from_user.username}', '{wallet_num.get('wallet')}', '', '');""")
+            await messages_rasp(message, state, connection, cursor, month)
+        except sqlite3.IntegrityError:
+            connection.commit()
+            cursor.close()
+            await message.answer("Такой кошелек уже привязан к другому аккаунту. Попробуйте привязать другой кошелек "
+                                 "и произведите оплату с него.")
+            await state.clear()
+            await state.set_state(GetWalletForm3.GET_WALLET)
+
+
+async def messages_rasp(message: Message, state: FSMContext, connection, cursor, month):
     connection.commit()
     cursor.close()
     await message.answer("Кошелек получен✅")
