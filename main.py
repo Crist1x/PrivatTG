@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import sys
 import os
@@ -8,6 +7,7 @@ import requests
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import date, timedelta
+from datetime import datetime
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
@@ -32,7 +32,6 @@ dp = Dispatcher()
 async def get_start(message: Message, bot: Bot):
     await message.answer(hbold("Привет,", message.from_user.username) + "!\n\n"
                          f"С помощью этого бота ты сможешь купить доступ в мою приватку.\n\n"
-                         f"{hitalic('Для помощи напиши /help')}\n\n"
                          f"{hbold(f'АДМИН: @tyoma5e')}",
                          parse_mode=ParseMode.HTML,
                          reply_markup=greeting_keyboard)
@@ -121,7 +120,7 @@ async def tranzaction_info(message: Message, month):
     # Подключение к бд
     connection = sqlite3.connect('db/database.db')
     cursor = connection.cursor()
-    user_wallet = cursor.execute(f"SELECT wallet FROM users WHERE username='{message.from_user.username}'").fetchone()[
+    user_wallet = cursor.execute(f"SELECT wallet FROM users WHERE username='{message.from_user.id}'").fetchone()[
         0]
     # Получение информации о транзах с кошелька пользователя
     r_link = f"https://api.trongrid.io/v1/accounts/{user_wallet}/transactions/trc20"
@@ -131,34 +130,44 @@ async def tranzaction_info(message: Message, month):
     for tr in data.get('data', []):
         symbol = tr.get('token_info', {}).get('symbol')
         to = tr.get('to')
-        v = tr.get('value', '')
 
+        v = tr.get('value', '')
+        time_ = datetime.fromtimestamp(float(tr.get('block_timestamp', '')) / 1000)
         dec = -1 * int(tr.get('token_info', {}).get('decimals', '6'))
         f = float(v[:dec] + '.' + v[dec:])
 
-        # if symbol == "USDT" and to == os.getenv("TYOMA_WALLET"): ПОМЕНЯТЬ
-        if symbol == "USDT":
+        if (symbol == "USDT") and (to == os.getenv("TYOMA_WALLET")) and (datetime.today() - time_ < timedelta(days=30)):
             if month == 1:
                 if 34 < f < 36:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=30))}' WHERE username = "
-                                   f"'{message.from_user.username}'")
+                                   f"'{message.from_user.id}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
                                          reply_markup=greeting_keyboard)
+                    try:
+                        await bot.send_message(chat_id=os.getenv("TYOMA_ID"),
+                                               text=f"{message.from_user.username} оформил доступ в випку на месяц!")
+                    except Exception as e:
+                        pass
 
                 else:
                     text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
                     await message.answer(text,
                                          parse_mode=ParseMode.HTML)
             elif month == 2:
-                if 0 < f < 71:
+                if 1 < f < 71:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=60))}' WHERE username = "
-                                   f"'{message.from_user.username}'")
+                                   f"'{message.from_user.id}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
                                          reply_markup=greeting_keyboard)
+                    try:
+                        await bot.send_message(chat_id=os.getenv("TYOMA_ID"),
+                                               text=f"{message.from_user.username} оформил доступ в випку на два месяца!")
+                    except Exception as e:
+                        pass
 
                 else:
                     text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
@@ -168,10 +177,15 @@ async def tranzaction_info(message: Message, month):
                 if 99 < f < 101:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=90))}' WHERE username = "
-                                   f"'{message.from_user.username}'")
+                                   f"'{message.from_user.id}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
                                          reply_markup=greeting_keyboard)
+                    try:
+                        await bot.send_message(chat_id=os.getenv("TYOMA_ID"),
+                                               text=f"{message.from_user.username} оформил доступ в випку на три месяца!")
+                    except Exception as e:
+                        pass
                 else:
                     text = uncorrect_summ.substitute(summ=hbold(str(f) + " USDT"))
                     await message.answer(text,
@@ -186,7 +200,14 @@ async def checking():
     connection = sqlite3.connect('db/database.db')
     cursor = connection.cursor()
     users_list = cursor.execute("SELECT username, date_finish FROM users").fetchall()
-    print(users_list)
+    for item in users_list:
+        if item[1] != '':
+            if datetime.now() > datetime.strptime(item[1], '%Y-%m-%d'):
+                await bot.ban_chat_member(-1002079555410, item[0])
+                await bot.unban_chat_member(-1002079555410, item[0])
+                cursor.execute(f"DELETE FROM users WHERE username={item[0]}")
+    connection.commit()
+    cursor.close()
 
 
 # Обработка коллбека оплаты 1 месяца
@@ -204,7 +225,7 @@ dp.message.register(callbacks.get_wallet3, GetWalletForm3.GET_WALLET)
 async def start():
     try:
         scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-        scheduler.add_job(checking, trigger='interval', seconds=12)
+        scheduler.add_job(checking, trigger='interval', hours=6)
         scheduler.start()
         await dp.start_polling(bot)
     finally:

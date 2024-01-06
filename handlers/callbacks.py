@@ -96,13 +96,13 @@ async def wallet_append(message: Message, state: FSMContext, month):
     cursor = connection.cursor()
 
     not_first_time = cursor.execute("SELECT username FROM users WHERE username=?",
-                                    (message.from_user.username,)).fetchone()
+                                    (message.from_user.id,)).fetchone()
     wallet_num = await state.get_data()
 
     if not_first_time:
         try:
             cursor.execute(
-                f"UPDATE users SET wallet = '{wallet_num.get('wallet')}' WHERE username = '{message.from_user.username}'")
+                f"UPDATE users SET wallet = '{wallet_num.get('wallet')}' WHERE username = '{message.from_user.id}'")
             await messages_rasp(message, state, connection, cursor, month)
         except sqlite3.IntegrityError:
             connection.commit()
@@ -116,7 +116,7 @@ async def wallet_append(message: Message, state: FSMContext, month):
             cursor.execute(f"""INSERT INTO users
                                               (username, wallet, date_start, date_finish)
                                               VALUES
-                                              ('{message.from_user.username}', '{wallet_num.get('wallet')}', '', '');""")
+                                              ('{message.from_user.id}', '{wallet_num.get('wallet')}', '', '');""")
             await messages_rasp(message, state, connection, cursor, month)
         except sqlite3.IntegrityError:
             connection.commit()
