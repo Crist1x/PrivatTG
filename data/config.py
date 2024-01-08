@@ -1,9 +1,10 @@
+from aiogram.types import InputFile
 from aiogram.utils.markdown import hbold, hitalic, hcode, hunderline
 from string import Template
 
 price_list = ["35 USDT", "70 USDT", " 100 USDT"]
 
-pic = "https://img.freepik.com/premium-vector/business-candle-stick-graph-chart-of-stock-market_41981-401.jpg?size=626&ext=jpg"
+pic = "data/video.mp4"
 
 dostup_text = Template(f"""ЦЕНА: {hbold('$price')}
 
@@ -15,11 +16,13 @@ dostup_text = Template(f"""ЦЕНА: {hbold('$price')}
 
 predup_text = f"""{hunderline('Чтобы вы без проблем были добавлены в канал, нам необходимо знать реквизиты кошелька, '
                               'с которого произойдет оплата.')}
-{hbold('Пришлите его следующим сообщением без лишних символов!')}"""
+Не производите оплату напрямую с биржи. Используйте личный кошелек (TouchWallet, Exodus, Trust и другие) во избежание проблем с отслеживанием перевода.
+Если у вас нет личного кошелька, то напишите @tyoma5e и договритесь об оплате лично.
+{hbold('Пришлите адресс следующим сообщением без лишних символов!')}"""
 
 oplata_text = Template(f"""{hunderline('Реквизиты для перевода:')}
 
-{hbold('Оплата:')} {hcode('TH9n968wHMRjAqHMKguMsHHKJqYmQsXjQU')}
+{hbold('Оплата:')} {hcode('TPkDyxb7ZTCZMs3J9JCcbbumZybF73wwT6')}
 {hbold('Сеть:')} TRC-20
 {hbold('Стоимость:')} $price
 

@@ -12,7 +12,7 @@ from datetime import datetime
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from aiogram.utils.markdown import hbold, hitalic
 
 from keyboards.reply import greeting_keyboard, price_keyboard, oplata_keyboard_1_month, oplata_keyboard_2_month, \
@@ -49,8 +49,9 @@ async def dostup(message: Message, bot: Bot):
 @dp.message(F.text == "Доступ на 1 месяц 👶")
 async def one_month(message: Message, bot: Bot):
     text = dostup_text.substitute(price=price_list[0])
-    await bot.send_photo(message.from_user.id,
-                         photo=pic,
+    vid = FSInputFile(pic)
+    await bot.send_video(message.from_user.id,
+                         video=vid,
                          caption=text,
                          parse_mode=ParseMode.HTML,
                          reply_markup=oplata_keyboard_1_month
@@ -61,8 +62,9 @@ async def one_month(message: Message, bot: Bot):
 @dp.message(F.text == "Доступ на 2 месяца 🤩")
 async def two_months(message: Message, bot: Bot):
     text = dostup_text.substitute(price=price_list[1])
-    await bot.send_photo(message.from_user.id,
-                         photo=pic,
+    vid = FSInputFile(pic)
+    await bot.send_video(message.from_user.id,
+                         video=vid,
                          caption=text,
                          parse_mode=ParseMode.HTML,
                          reply_markup=oplata_keyboard_2_month
@@ -73,8 +75,9 @@ async def two_months(message: Message, bot: Bot):
 @dp.message(F.text == "Доступ на 3 месяца 👑")
 async def three_months(message: Message, bot: Bot):
     text = dostup_text.substitute(price=price_list[2])
-    await bot.send_photo(message.from_user.id,
-                         photo=pic,
+    vid = FSInputFile(pic)
+    await bot.send_video(message.from_user.id,
+                         video=vid,
                          caption=text,
                          parse_mode=ParseMode.HTML,
                          reply_markup=oplata_keyboard_3_month
@@ -125,6 +128,8 @@ async def tranzaction_info(message: Message, month):
     # Получение информации о транзах с кошелька пользователя
     r_link = f"https://api.trongrid.io/v1/accounts/{user_wallet}/transactions/trc20"
     data = requests.get(r_link, params={'limit': 3}, headers={"accept": "application/json"}).json()
+    flag = False
+    count = 0
 
     # Проход по транзам и получение нужной
     for tr in data.get('data', []):
@@ -135,16 +140,18 @@ async def tranzaction_info(message: Message, month):
         time_ = datetime.fromtimestamp(float(tr.get('block_timestamp', '')) / 1000)
         dec = -1 * int(tr.get('token_info', {}).get('decimals', '6'))
         f = float(v[:dec] + '.' + v[dec:])
+        count += 1
 
         if (symbol == "USDT") and (to == os.getenv("TYOMA_WALLET")) and (datetime.today() - time_ < timedelta(days=30)):
             if month == 1:
-                if 34 < f < 36:
+                if 0 < f < 36:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=30))}' WHERE username = "
                                    f"'{message.from_user.id}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
                                          reply_markup=greeting_keyboard)
+                    flag = True
                     try:
                         await bot.send_message(chat_id=os.getenv("TYOMA_ID"),
                                                text=f"{message.from_user.username} оформил доступ в випку на месяц!")
@@ -156,13 +163,14 @@ async def tranzaction_info(message: Message, month):
                     await message.answer(text,
                                          parse_mode=ParseMode.HTML)
             elif month == 2:
-                if 1 < f < 71:
+                if 69 < f < 71:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=60))}' WHERE username = "
                                    f"'{message.from_user.id}'")
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
                                          reply_markup=greeting_keyboard)
+                    flag = True
                     try:
                         await bot.send_message(chat_id=os.getenv("TYOMA_ID"),
                                                text=f"{message.from_user.username} оформил доступ в випку на два месяца!")
@@ -181,6 +189,7 @@ async def tranzaction_info(message: Message, month):
                     link = await bot.create_chat_invite_link(chat_id=os.getenv("CHAT_ID"), member_limit=1)
                     await message.answer(success.substitute(link=link.invite_link), parse_mode=ParseMode.HTML,
                                          reply_markup=greeting_keyboard)
+                    flag = True
                     try:
                         await bot.send_message(chat_id=os.getenv("TYOMA_ID"),
                                                text=f"{message.from_user.username} оформил доступ в випку на три месяца!")
@@ -191,7 +200,8 @@ async def tranzaction_info(message: Message, month):
                     await message.answer(text,
                                          parse_mode=ParseMode.HTML)
         else:
-            await message.answer(problem)
+            if not flag and count == 3:
+                await message.answer(problem)
     connection.commit()
     cursor.close()
 
@@ -203,9 +213,16 @@ async def checking():
     for item in users_list:
         if item[1] != '':
             if datetime.now() > datetime.strptime(item[1], '%Y-%m-%d'):
-                await bot.ban_chat_member(-1002079555410, item[0])
-                await bot.unban_chat_member(-1002079555410, item[0])
-                cursor.execute(f"DELETE FROM users WHERE username={item[0]}")
+                try:
+                    await bot.ban_chat_member(-1002079555410, item[0])
+                    await bot.unban_chat_member(-1002079555410, item[0])
+                    cursor.execute(f"DELETE FROM users WHERE username={item[0]}")
+                except Exception as e:
+                    try:
+                        await bot.send_message(os.getenv("TYOMA_ID"),
+                                               text=f"Время подписки пользователя {item[0]} истекло. Удалите его вручную.")
+                    except:
+                        pass
     connection.commit()
     cursor.close()
 
