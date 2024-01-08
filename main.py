@@ -144,7 +144,7 @@ async def tranzaction_info(message: Message, month):
 
         if (symbol == "USDT") and (to == os.getenv("TYOMA_WALLET")) and (datetime.today() - time_ < timedelta(days=30)):
             if month == 1:
-                if 0 < f < 36:
+                if 34 < f < 36:
                     cursor.execute(f"UPDATE users SET date_start = '{str(date.today())}', date_finish = "
                                    f"'{str(date.today() + timedelta(days=30))}' WHERE username = "
                                    f"'{message.from_user.id}'")
